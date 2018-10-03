@@ -22,6 +22,7 @@ using namespace std;
 
 // return list of the string split around loc (3 elems)
 vector<string> splitAround(string elem, int loc){
+  cout<< "ELEM LOC = " << elem << " " << loc;
   vector<string> list;
   string cur = "";
   cout<< "pipeloc = " << loc;
@@ -49,11 +50,27 @@ vector<string> splitAround(string elem, int loc){
 // return elements start through end combind (exa version is for locatioon
 // inside string at location.
 vector<string> combine(vector<string> list, int start, int exastart, int end, int exaend){
+ 
   vector<string> olist;
   string out = "";
   string ins = "";
   string ins2 = "";
+  string after = "";
   for(int i = start ; i<=end ; i++){
+    if(start == end){
+      string onlyelem = list.at(i);
+      for(int i = 0 ; i < onlyelem.length() ; i++){
+        if(i<exastart){
+          ins += onlyelem.at(i);
+        }else if (i > exastart && i < exaend){
+          out += onlyelem.at(i);
+        }
+        if(i>exaend){
+          ins2 += onlyelem.at(i);
+        }
+      }
+      break;
+    }
     if(i>start && i<end){
       cout << "?";
       cout<<"\n COMB " << list.at(i);
@@ -82,12 +99,22 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
       }
     }
   }
-  if(ins.find("|")<exastart){
+  if(ins.find("|")<exastart&&ins.find("|")>-1){
+    cout<< "y tho ";
     vector<string> tl = splitAround(ins,ins.find("|"));
-    // TODO split if string is "blahe|"well get rekt"|wew"
+    olist.push_back(tl.at(0));
+    ins = tl.at(2);
   }
-  if(ins2.find("|")>exaend){
+  if(ins2.find("|")>exaend&&ins2.find("|")>-1){
+    cout<< "even more y tho";
+    vector<string> tl = splitAround(ins,ins.find("|"));
+    ins2 = tl.at(0);
+    after = tl.at(2);
     // TODO same as above
+  }
+  olist.push_back(ins+out+ins2);
+  if(after.compare("")!=0){
+    olist.push_back(after);
   }
   cout<<"combined: "<<out;
   return olist;

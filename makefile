@@ -1,2 +1,2 @@
 all:
-	g++ shell.cpp
+	g++ shell.cpp -g
