@@ -25,21 +25,18 @@ vector<string> splitAround(string elem, int loc){
   cout<< "ELEM LOC = " << elem << " " << loc;
   vector<string> list;
   string cur = "";
-  cout<< "pipeloc = " << loc;
   for(int i = 0;i<elem.length();i++){
     if(i == loc){
-      if(cur.compare("")!=0){
-        list.push_back(cur);
-        cur = "";
-      }
+      list.push_back(cur);
+      cur = "";
       string p = "";
       p += elem.at(i);
       list.push_back(p);
     }else{
       cur += elem.at(i);
-      if(i == elem.length() - 1 ){
-        list.push_back(cur);
-      }
+    }
+    if(i == elem.length() - 1 ){
+      list.push_back(cur);
     }
   }
   cout << "\n" << list.at(0) << " " << list.at(1) << " " << list.at(2) << " thisislists";
@@ -99,21 +96,26 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
       }
     }
   }
-  if(ins.find("|")<exastart&&ins.find("|")>-1){
+  int insbar = ins.find("|");
+  int ins2bar = ins2.find("|");
+  cout<<ins2bar<<"INS2BAR";
+  if(insbar>-1){
     cout<< "y tho ";
-    vector<string> tl = splitAround(ins,ins.find("|"));
+    vector<string> tl = splitAround(ins,insbar);
     olist.push_back(tl.at(0));
+    olist.push_back(tl.at(1));
     ins = tl.at(2);
   }
-  if(ins2.find("|")>exaend&&ins2.find("|")>-1){
+  if(ins2bar>-1){
     cout<< "even more y tho";
-    vector<string> tl = splitAround(ins,ins.find("|"));
+    vector<string> tl = splitAround(ins,ins2bar);
     ins2 = tl.at(0);
     after = tl.at(2);
     // TODO same as above
   }
   olist.push_back(ins+out+ins2);
   if(after.compare("")!=0){
+    olist.push_back("|");
     olist.push_back(after);
   }
   cout<<"combined: "<<out;
@@ -170,7 +172,9 @@ vector<string> parse(string s){
       else {
         vector<string> tv = splitAround(elem, pipeloc);
         for( int i = 0;i<tv.size();i++){
-          v.push_back(tv.at(i));
+          if(tv.at(i) != ""){
+            v.push_back(tv.at(i));
+          }
         }
       }
     }
@@ -180,7 +184,9 @@ vector<string> parse(string s){
       quot = false;
       vector<string> tv = combine(toks,pos,exapos,i,quoteloc);
       for(int i = 0;i<tv.size();i++){
-        v.push_back(tv.at(i));
+        if(tv.at(i)!=""){
+          v.push_back(tv.at(i));
+        }
       }
     }
     // if nothing yet inerted and not in quote insert current elem
