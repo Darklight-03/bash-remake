@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -18,6 +21,7 @@ using namespace std;
 // DIRECTORY = absolute path || relative path
 // PIPE = |
 // REDIRECTION = < || >
+
 
 
 // return list of the string split around loc (3 elems)
@@ -44,6 +48,28 @@ vector<string> splitAround(string elem, int loc){
 }
 
 
+
+// recursive splitAround
+vector<string> splitPipesR(vector<string> vv, string elem){
+  int loc = elem.find("|");
+  if(loc == -1){
+    vv.push_back(elem);
+    return vv;
+  }
+  vector<string> ins = splitAround(elem,loc);
+  vv.insert(vv.end(),ins.begin(),ins.end());
+  string backs = vv.at(vv.size()-1);
+  vv.pop_back();
+  return splitPipesR(vv,backs);
+}
+
+vector<string> splitPipes(string elem){
+  vector<string> v;
+  return splitPipesR(v,elem);
+}
+
+
+
 // return elements start through end combind (exa version is for locatioon
 // inside string at location.
 vector<string> combine(vector<string> list, int start, int exastart, int end, int exaend){
@@ -52,7 +78,7 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
   string out = "";
   string ins = "";
   string ins2 = "";
-  string after = "";
+  bool after = false;
   for(int i = start ; i<=end ; i++){
     if(start == end){
       string onlyelem = list.at(i);
@@ -101,22 +127,29 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
   cout<<ins2bar<<"INS2BAR";
   if(insbar>-1){
     cout<< "y tho ";
-    vector<string> tl = splitAround(ins,insbar);
-    olist.push_back(tl.at(0));
-    olist.push_back(tl.at(1));
-    ins = tl.at(2);
+    vector<string> tl = splitPipes(ins);
+    for(int i = 0;i<tl.size();i++){
+      if(i!=tl.size()-1){
+        olist.push_back(tl.at(i));
+      }
+      else{
+        ins = tl.at(i);
+      }
+    }
   }
   if(ins2bar>-1){
     cout<< "even more y tho";
-    vector<string> tl = splitAround(ins,ins2bar);
+    vector<string> tl = splitPipes(ins2);
     ins2 = tl.at(0);
-    after = tl.at(2);
-    // TODO same as above
+    after = true;
+    tl.erase(tl.begin());
+    olist.push_back(ins+out+ins2);
+    for(int i = 0 ; i < tl.size() ; i++){
+      olist.push_back(tl.at(i));
+    }
   }
-  olist.push_back(ins+out+ins2);
-  if(after.compare("")!=0){
-    olist.push_back("|");
-    olist.push_back(after);
+  if(!after){
+    olist.push_back(ins+out+ins2);
   }
   cout<<"combined: "<<out;
   return olist;
@@ -170,7 +203,7 @@ vector<string> parse(string s){
         cout << "pipe ok\n";
       }
       else {
-        vector<string> tv = splitAround(elem, pipeloc);
+        vector<string> tv = splitPipes(elem);
         for( int i = 0;i<tv.size();i++){
           if(tv.at(i) != ""){
             v.push_back(tv.at(i));
@@ -207,6 +240,21 @@ int main(){
     cout<<"DONE\n";
     for(int i = 0;i<expr.size();i++){
       cout<<expr.at(i)<<"@#$";
+    } 
+    int pid = fork();
+    if(pid == 0){
+      vector<char*> cexpr;
+
+      for(int i = 0;i<expr.size();i++){
+        cexpr.push_back(const_cast<char*>(expr[i].c_str()));
+      }
+
+      cexpr.push_back(NULL);
+      char **args = &cexpr[0];
+      execvp(args[0],args);
+      cout<<"succ\n";
+    }else{
+      waitpid(pid,NULL,0);
     }
   }
 }
