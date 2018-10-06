@@ -231,8 +231,56 @@ vector<string> parse(string s){
   return v; 
 }
 
+vector<char*> v2charv(vector<string> v){
+  // DUMB STUFF NEEDED TO CONVERT VECTOR TO CHAR ARR 
+  // ( from stackoverflow.com/questions/26032039 )
+  vector<char*> newv;
+  for(auto& elem:v){
+    newv.push_back(&elem[0]);
+  }
+  return newv;
+}
+
+void runSingle(char** chararr){
+  int pid = fork();
+  if(pid == 0){
+    execvp(chararr[0],chararr);
+    cout<<"succ\n";
+  }else{
+    waitpid(pid,NULL,0);
+  }
+}
+
+void runPipe(char** cmd, char** cmd2){
+  int fd[2];
+  pipe(fd);
+
+  int pid = fork();
+  if(pid == 0){
+    close(fd[0]);
+    dup2(fd[1],1);
+    execvp(cmd[0],cmd);
+  }
+  else{
+    close(fd[1]);
+    dup2(fd[0],0);
+    waitpid(pid,NULL,0);
+    execvp(cmd2[0],cmd2);
+  }
+}
+
+
+
+
+
+
+
+
+
+
 int main(){
   while(true){
+    // BELOW THIS LINE IS INPUT
     string x = "";
     vector<string> expr;
     getline(cin,x);
@@ -241,21 +289,9 @@ int main(){
     for(int i = 0;i<expr.size();i++){
       cout<<expr.at(i)<<"@#$";
     } 
-    int pid = fork();
-    if(pid == 0){
-      vector<char*> cexpr;
-
-      for(int i = 0;i<expr.size();i++){
-        cexpr.push_back(const_cast<char*>(expr[i].c_str()));
-      }
-
-      cexpr.push_back(NULL);
-      char **args = &cexpr[0];
-      execvp(args[0],args);
-      cout<<"succ\n";
-    }else{
-      waitpid(pid,NULL,0);
-    }
+    // ABOVE THIS LINE IS INPUT
+    vector<char*> args = v2charv(expr);
+    runSingle(args.data());
   }
 }
 
