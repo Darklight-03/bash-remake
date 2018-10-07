@@ -7,6 +7,9 @@
 #include <sstream>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 using namespace std;
@@ -26,15 +29,35 @@ using namespace std;
 int findQ(string s){
   int qloc = s.find("\"");
   int sqloc = s.find("\'");
-  return min(qloc,sqloc);
+  if(qloc == sqloc) return qloc;
+  if(qloc >=0 && sqloc >=0) return min(qloc,sqloc);
+  if(qloc == -1) return sqloc;
+  return qloc;
 }
 
 int findP(string s){
   int pipeloc = s.find("|");
   int gtloc = s.find(">");
   int ltloc = s.find("<");
-  int pg = min(pipeloc,gtloc);
-  return min(pg,ltloc);
+  int comb = -1;
+  if(pipeloc == gtloc){ 
+    comb = pipeloc;
+  }else if( pipeloc >= 0 && gtloc >= 0){
+    comb = min(pipeloc,gtloc);
+  }else if(pipeloc == -1){
+    comb = gtloc;
+  }else{
+    comb = pipeloc;
+  }
+  if(comb == ltloc){
+    return comb;
+  }else if(comb >= 0 && ltloc >= 0){
+    return min(comb,ltloc);
+  }else if(comb == -1){
+    return ltloc;
+  }else{
+    return comb;
+  }
 }
 
 // return list of the string split around loc (3 elems)
@@ -64,7 +87,7 @@ vector<string> splitAround(string elem, int loc){
 
 // recursive splitAround
 vector<string> splitPipesR(vector<string> vv, string elem){
-  int loc = elem.find("|");
+  int loc = findP(elem);
   if(loc == -1){
     vv.push_back(elem);
     return vv;
@@ -135,8 +158,8 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
       }
     }
   }
-  int insbar = ins.find("|");
-  int ins2bar = ins2.find("|");
+  int insbar = findP(ins);
+  int ins2bar = findP(ins2);
   cout<<ins2bar<<"INS2BAR";
   if(insbar>-1){
     cout<< "y tho ";
@@ -198,8 +221,8 @@ vector<string> parse(string s){
   // iterate through word lists combining parenthesis.
   for ( int i = 0 ; i < toks.size() ; i++ ){
     string elem = toks.at(i);
-    int pipeloc = elem.find("|");
-    int quoteloc = elem.find("\"");
+    int pipeloc = findP(elem);
+    int quoteloc = findQ(elem);
     int vsize = v.size();
     cout << "\n" << toks.at(i);
     // if quote at begin set quote flag and position
@@ -254,6 +277,7 @@ vector<char*> v2charv(vector<string> v){
   return newv;
 }
 
+// not necessary anymore
 void runSingle(char** chararr){
   int pid = fork();
   if(pid == 0){
@@ -264,8 +288,50 @@ void runSingle(char** chararr){
   }
 }
 
+// returns 1 if output 2 if input redirection
+int redirType(vector<string> l){
+  for( int i = 0 ; i < l.size() ; i++){
+    if(l.at(i) == ">"){
+      return 1;
+    }
+    if(l.at(i) == "<"){
+      return 0;
+    }
+  }
+  return -1;
+}
 
+// returns true if vector has a redirection
+bool hasRedir(vector<string> l){
+  for(int i = 0;i<l.size();i++){
+    if(l.at(i) == ">" || l.at(i) == "<"){
+      return true;
+    }
+  }
+  return false;
+}
 
+// splits vector into command and file to redirect to
+vector<vector<string>> splitRedir(vector<string> l){
+  vector<vector<string>> o;
+  o.push_back(vector<string>());
+  o.push_back(vector<string>());
+  bool fh = true;
+
+  for(int i = 0 ; i < l.size() ; i++){
+    if(l.at(i) == ">" || l.at(i) == "<"){
+      fh = false;
+      continue;
+    }
+    if(fh){
+      o.at(0).push_back(l.at(i));
+    }else{
+      o.at(1).push_back(l.at(i));
+    }
+  }
+  cout<<"REDIR TESTT \n"<<o.at(0).at(0)<<"\n"<<o.at(1).at(0)<<"\n";
+  return o;
+}
 
 // takes each command on the list and runs them with pipes if necessary
 void runCommands(vector<vector<string>> cmdsstr){
@@ -278,8 +344,11 @@ void runCommands(vector<vector<string>> cmdsstr){
       cout<<"\n\n"<<cmdsstr.at(i).at(0)<<"\n";
       dup2(fd[1],1);
       close(fd[0]);
+
+      vector<string> cur = cmdsstr.at(i); 
       
-      vector<char*> cmds = v2charv(cmdsstr.at(i));
+
+      vector<char*> cmds = v2charv(cur);
       execvp(cmds.data()[0],cmds.data());
 
 
@@ -292,7 +361,21 @@ void runCommands(vector<vector<string>> cmdsstr){
   }
     close(fd[1]);
     close(fd[0]);
-    vector<char*> cmds = v2charv(cmdsstr.at(cmdsstr.size()-1));
+      
+    vector<string> cur = cmdsstr.at(cmdsstr.size()-1);
+    vector<string> after;
+    int file;
+    int dest;
+    if(hasRedir(cur)){
+      dest = redirType(cur);
+      vector<vector<string>> rv = splitRedir(cur);
+      cur = rv.at(0);
+      after = rv.at(1);
+      vector<char*> cafter = v2charv(after);
+      file = open(cafter.at(0), O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
+    }
+    dup2(file,dest);
+    vector<char*> cmds = v2charv(cur);
     execvp(cmds.data()[0],cmds.data());
 }
 
@@ -333,9 +416,6 @@ int main(){
     }else{
       waitpid(pid,NULL,0);
     }
-    /*
-    vector<char*> args = v2charv(expr);
-    runSingle(args.data());*/
   }
 }
 
