@@ -23,6 +23,19 @@ using namespace std;
 // REDIRECTION = < || >
 
 
+int findQ(string s){
+  int qloc = s.find("\"");
+  int sqloc = s.find("\'");
+  return min(qloc,sqloc);
+}
+
+int findP(string s){
+  int pipeloc = s.find("|");
+  int gtloc = s.find(">");
+  int ltloc = s.find("<");
+  int pg = min(pipeloc,gtloc);
+  return min(pg,ltloc);
+}
 
 // return list of the string split around loc (3 elems)
 vector<string> splitAround(string elem, int loc){
@@ -251,41 +264,19 @@ void runSingle(char** chararr){
   }
 }
 
-void runPipe(char** cmd, char** cmd2){
-  int fd[2];
-  pipe(fd);
-
-  int pid = fork();
-  if(pid == 0){
-    close(fd[0]);
-    dup2(fd[1],1);
-    execvp(cmd[0],cmd);
-  }
-  else{
-    close(fd[1]);
-    dup2(fd[0],0);
-    waitpid(pid,NULL,0);
-    execvp(cmd2[0],cmd2);
-  }
-}
 
 
 
-
-
+// takes each command on the list and runs them with pipes if necessary
 void runCommands(vector<vector<string>> cmdsstr){
   
     int fd[2];
+  for(int i = 0;i<cmdsstr.size()-1;i++){
     pipe(fd);
-  for(int i = 0;i<cmdsstr.size();i++){
     int pid = fork();
     if(pid==0){
       cout<<"\n\n"<<cmdsstr.at(i).at(0)<<"\n";
-      if(i!=cmdsstr.size()-1){
       dup2(fd[1],1);
-      }else{
-        close(fd[1]);
-      }
       close(fd[0]);
       
       vector<char*> cmds = v2charv(cmdsstr.at(i));
@@ -295,16 +286,17 @@ void runCommands(vector<vector<string>> cmdsstr){
     }else{
       waitpid(pid,NULL,0);
       close(fd[1]);
-      if(i != cmdsstr.size()-1){
       dup2(fd[0],0);
-      }else{
-        close(fd[0]);
-      }
     }
+    
   }
+    close(fd[1]);
+    close(fd[0]);
+    vector<char*> cmds = v2charv(cmdsstr.at(cmdsstr.size()-1));
+    execvp(cmds.data()[0],cmds.data());
 }
 
-// takes the vector of commands and splits into multiple vectors, splitting by |
+// takes the vector of commands and splits into multiple vectors, splitting by |, then calls runCommands
 void handleCommand(vector<string> cmds){
   vector<vector<string>> splitcmds;
   splitcmds.push_back(vector<string>());
@@ -334,6 +326,7 @@ int main(){
     } 
     // ABOVE THIS LINE IS INPUT
     
+    // basic fork and handle command on new process
     int pid = fork();
     if(pid==0){
       handleCommand(expr);
