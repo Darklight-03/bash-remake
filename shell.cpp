@@ -73,7 +73,6 @@ int findP(string s){
 
 // return list of the string split around loc (3 elems)
 vector<string> splitAround(string elem, int loc){
-  cout<< "ELEM LOC = " << elem << " " << loc;
   vector<string> list;
   string cur = "";
   for(int i = 0;i<elem.length();i++){
@@ -90,7 +89,6 @@ vector<string> splitAround(string elem, int loc){
       list.push_back(cur);
     }
   }
-  cout << "\n" << list.at(0) << " " << list.at(1) << " " << list.at(2) << " thisislists";
   return list;
 }
 
@@ -142,8 +140,6 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
       break;
     }
     if(i>start && i<end){
-      cout << "?";
-      cout<<"\n COMB " << list.at(i);
       out += list.at(i);
       out += " ";
     }
@@ -171,9 +167,7 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
   }
   int insbar = findP(ins);
   int ins2bar = findP(ins2);
-  cout<<ins2bar<<"INS2BAR";
   if(insbar>-1){
-    cout<< "y tho ";
     vector<string> tl = splitPipes(ins);
     for(int i = 0;i<tl.size();i++){
       if(i!=tl.size()-1){
@@ -185,7 +179,6 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
     }
   }
   if(ins2bar>-1){
-    cout<< "even more y tho";
     vector<string> tl = splitPipes(ins2);
     ins2 = tl.at(0);
     after = true;
@@ -198,7 +191,6 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
   if(!after){
     olist.push_back(ins+out+ins2);
   }
-  cout<<"combined: "<<out;
   return olist;
 }
 
@@ -218,7 +210,6 @@ vector<string> parse(string s){
     // add char to string
     else{
       newstring += s.at(i);
-      cout << s.at(i);
       // if end of string push last string to list too.
       if(i == s.length()-1){
         toks.push_back(newstring);
@@ -235,10 +226,8 @@ vector<string> parse(string s){
     int pipeloc = findP(elem);
     int quoteloc = findQ(elem);
     int vsize = v.size();
-    cout << "\n" << toks.at(i);
     // if quote at begin set quote flag and position
     if(!quot && quoteloc>-1){
-      cout << "quot \n";
       quot = true;
       pos = i;
       exapos = quoteloc;
@@ -247,7 +236,6 @@ vector<string> parse(string s){
     // if pipe is not in quote then split around it
     if(!quot && pipeloc>-1){
       if(elem.length() == 1){
-        cout << "pipe ok\n";
       }
       else {
         vector<string> tv = splitPipes(elem);
@@ -260,7 +248,6 @@ vector<string> parse(string s){
     }
     // to end quote combine all in between
     if(quot && quoteloc>-1){
-      cout << "eoquot\n";
       quot = false;
       vector<string> tv = combine(toks,pos,exapos,i,quoteloc);
       for(int i = 0;i<tv.size();i++){
@@ -293,7 +280,6 @@ void runSingle(char** chararr){
   int pid = fork();
   if(pid == 0){
     execvp(chararr[0],chararr);
-    cout<<"succ\n";
   }else{
     waitpid(pid,NULL,0);
   }
@@ -340,7 +326,6 @@ vector<vector<string>> splitRedir(vector<string> l){
       o.at(1).push_back(l.at(i));
     }
   }
-  cout<<"REDIR TESTT \n"<<o.at(0).at(0)<<"\n"<<o.at(1).at(0)<<"\n";
   return o;
 }
 
@@ -357,7 +342,6 @@ void runCommands(vector<vector<string>> cmdsstr){
     int pid = fork();
     if(pid==0){
       // child:
-      cout<<"\n\n"<<cmdsstr.at(i).at(0)<<"\n";
       // redir output to fd
       dup2(fd[1],1);
       close(fd[0]);
@@ -435,7 +419,6 @@ void handleCommand(vector<string> cmds){
       vi++;
     }
   }
-  cout<<splitcmds.size();
   runCommands(splitcmds);
 }
 
@@ -447,10 +430,6 @@ int main(){
     vector<string> expr;
     getline(cin,x);
     expr = parse(x);
-    cout<<"DONE\n";
-    for(int i = 0;i<expr.size();i++){
-      cout<<expr.at(i)<<"@#$";
-    } 
     // ABOVE THIS LINE IS INPUT
     
     // cd handling
