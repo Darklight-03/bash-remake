@@ -442,6 +442,7 @@ void handleCommand(vector<string> cmds){
 int main(){
   while(true){
     // BELOW THIS LINE IS INPUT
+    cout<<"\n"<<get_current_dir_name()<<": ";
     string x = "";
     vector<string> expr;
     getline(cin,x);
@@ -452,6 +453,11 @@ int main(){
     } 
     // ABOVE THIS LINE IS INPUT
     
+    if(expr.at(0).compare("cd") == 0){
+      vector<char*> cdv = v2charv(expr);
+      chdir(cdv.at(1));
+    }
+
     // basic fork and handle command on new process
     int pid = fork();
     if(pid==0){
