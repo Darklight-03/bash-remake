@@ -160,7 +160,7 @@ vector<string> combine(vector<string> list, int start, int exastart, int end, in
         if(i<exaend){
           out+=lastelem.at(i);
         }else if ( i > exaend){
-          ins+=lastelem.at(i);
+          ins2+=lastelem.at(i);
         }
       }
     }
@@ -232,6 +232,9 @@ vector<string> parse(string s){
       pos = i;
       exapos = quoteloc;
       quoteloc = elem.find("\"",quoteloc+1);
+      if(quoteloc == -1){
+        quoteloc = elem.find("\'",exapos+1);
+      }
     }
     // if pipe is not in quote then split around it
     if(!quot && pipeloc>-1){
@@ -278,15 +281,6 @@ vector<char*> v2charv(vector<string> v){
   return newv;
 }
 
-// not necessary anymore
-void runSingle(char** chararr){
-  int pid = fork();
-  if(pid == 0){
-    execvp(chararr[0],chararr);
-  }else{
-    waitpid(pid,NULL,0);
-  }
-}
 
 // returns 1 if output 2 if input redirection
 int redirType(vector<string> l){
@@ -319,7 +313,7 @@ vector<vector<string>> splitRedir(vector<string> l){
   bool fh = true;
 
   for(int i = 0 ; i < l.size() ; i++){
-    if(l.at(i) == ">" || l.at(i) == "<"){
+    if(l.at(i).compare(">")==0 || l.at(i).compare("<")==0){
       fh = false;
       continue;
     }
@@ -366,6 +360,7 @@ void runCommands(vector<vector<string>> cmdsstr){
   
       // run command
       vector<char*> cmds = v2charv(cur);
+      cmds.push_back(NULL);
       execvp(cmds.data()[0],cmds.data());
       exit(errno);
 
@@ -427,12 +422,12 @@ void handleCommand(vector<string> cmds){
 }
 
 int main(){
-  while(true){
+  string x = "";
+  while(getline(cin,x)){
+
     // BELOW THIS LINE IS INPUT
     cout<<"\n"<<get_current_dir_name()<<": ";
-    string x = "";
     vector<string> expr;
-    getline(cin,x);
     expr = parse(x);
     // ABOVE THIS LINE IS INPUT
 //    for( int i = 0; i < expr.size();i++){
