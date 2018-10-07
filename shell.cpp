@@ -39,6 +39,7 @@ int findP(string s){
   int pipeloc = s.find("|");
   int gtloc = s.find(">");
   int ltloc = s.find("<");
+  int aloc = s.find("&");
   int comb = -1;
   if(pipeloc == gtloc){ 
     comb = pipeloc;
@@ -49,14 +50,24 @@ int findP(string s){
   }else{
     comb = pipeloc;
   }
+  int comb2 = -1;
   if(comb == ltloc){
-    return comb;
+    comb2 = comb;
   }else if(comb >= 0 && ltloc >= 0){
-    return min(comb,ltloc);
+    comb2 = min(comb,ltloc);
   }else if(comb == -1){
-    return ltloc;
+    comb2 = ltloc;
   }else{
-    return comb;
+    comb2 = comb;
+  }
+  if(comb2 == aloc){
+    return comb2;
+  }else if(comb2 >=0 && aloc >=0){
+    return min(comb2,aloc);
+  }else if(comb2 == -1){
+    return aloc;
+  }else{
+    return comb2;
   }
 }
 
@@ -336,32 +347,54 @@ vector<vector<string>> splitRedir(vector<string> l){
 // takes each command on the list and runs them with pipes if necessary
 void runCommands(vector<vector<string>> cmdsstr){
   
-    int fd[2];
+  // pipes init
+  int fd[2];
+  //loop
   for(int i = 0;i<cmdsstr.size()-1;i++){
+    // make pipe
     pipe(fd);
+    // split proc
     int pid = fork();
     if(pid==0){
+      // child:
       cout<<"\n\n"<<cmdsstr.at(i).at(0)<<"\n";
+      // redir output to fd
       dup2(fd[1],1);
       close(fd[0]);
 
       vector<string> cur = cmdsstr.at(i); 
-      
-
+      vector<string> after;
+      int file = -1;
+      int dest;
+      // if needed redir file
+      if(hasRedir(cur)){
+        dest = redirType(cur);
+        vector<vector<string>> rv = splitRedir(cur);
+        cur = rv.at(0);
+        after = rv.at(1);
+        vector<char*> cafter = v2charv(after);
+        file = open(cafter.at(0), O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
+        dup2(file,dest);
+      }
+  
+      // run command
       vector<char*> cmds = v2charv(cur);
       execvp(cmds.data()[0],cmds.data());
-
+      exit(errno);
 
     }else{
+      // parent:
       waitpid(pid,NULL,0);
       close(fd[1]);
+      // redir output to input
       dup2(fd[0],0);
     }
     
   }
+  // end of loop
     close(fd[1]);
     close(fd[0]);
-      
+  // redir if needed to files 
     vector<string> cur = cmdsstr.at(cmdsstr.size()-1);
     vector<string> after;
     int file;
@@ -372,11 +405,21 @@ void runCommands(vector<vector<string>> cmdsstr){
       cur = rv.at(0);
       after = rv.at(1);
       vector<char*> cafter = v2charv(after);
-      file = open(cafter.at(0), O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
+      file = open(cafter.at(0), O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
+      dup2(file,dest);
     }
-    dup2(file,dest);
+    if(cur.at(cur.size()-1).compare("&")==0){
+      cur.pop_back();
+      if(fork()!=0){
+        signal(SIGCHLD,SIG_IGN);
+        exit(0);
+      }
+    }
+
+    // run final command
     vector<char*> cmds = v2charv(cur);
     execvp(cmds.data()[0],cmds.data());
+    exit(errno);
 }
 
 // takes the vector of commands and splits into multiple vectors, splitting by |, then calls runCommands
