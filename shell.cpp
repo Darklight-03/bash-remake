@@ -273,10 +273,53 @@ void runPipe(char** cmd, char** cmd2){
 
 
 
+void runCommands(vector<vector<string>> cmdsstr){
+  
+    int fd[2];
+    pipe(fd);
+  for(int i = 0;i<cmdsstr.size();i++){
+    int pid = fork();
+    if(pid==0){
+      cout<<"\n\n"<<cmdsstr.at(i).at(0)<<"\n";
+      if(i!=cmdsstr.size()-1){
+      dup2(fd[1],1);
+      }else{
+        close(fd[1]);
+      }
+      close(fd[0]);
+      
+      vector<char*> cmds = v2charv(cmdsstr.at(i));
+      execvp(cmds.data()[0],cmds.data());
 
 
+    }else{
+      waitpid(pid,NULL,0);
+      close(fd[1]);
+      if(i != cmdsstr.size()-1){
+      dup2(fd[0],0);
+      }else{
+        close(fd[0]);
+      }
+    }
+  }
+}
 
-
+// takes the vector of commands and splits into multiple vectors, splitting by |
+void handleCommand(vector<string> cmds){
+  vector<vector<string>> splitcmds;
+  splitcmds.push_back(vector<string>());
+  int vi = 0;
+  for(int i = 0;i<cmds.size();i++){
+    if(cmds.at(i)!="|"){
+      splitcmds.at(vi).push_back(cmds.at(i));
+    }else{
+      splitcmds.push_back(vector<string>());
+      vi++;
+    }
+  }
+  cout<<splitcmds.size();
+  runCommands(splitcmds);
+}
 
 int main(){
   while(true){
@@ -290,8 +333,16 @@ int main(){
       cout<<expr.at(i)<<"@#$";
     } 
     // ABOVE THIS LINE IS INPUT
+    
+    int pid = fork();
+    if(pid==0){
+      handleCommand(expr);
+    }else{
+      waitpid(pid,NULL,0);
+    }
+    /*
     vector<char*> args = v2charv(expr);
-    runSingle(args.data());
+    runSingle(args.data());*/
   }
 }
 
