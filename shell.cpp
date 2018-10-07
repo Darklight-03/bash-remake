@@ -421,12 +421,28 @@ void handleCommand(vector<string> cmds){
   runCommands(splitcmds);
 }
 
-int main(){
+void prompt(bool b){
+  if(b)
+  cout<<"\n"<<get_current_dir_name()<<": ";
+}
+
+int main(int argc, char *argv[]){
   string x = "";
   string prevdir = get_current_dir_name();
+  bool b = true;
+  int o;
+  while((o=getopt(argc,argv,"t"))!=-1){
+    switch(o){
+      case 't':
+        b=false;
+        break;
+      default:
+        cout<<"???"<<o<<endl;
+        break;
+    }
+  }
   vector<int> proclist;
-
-  cout<<"\n"<<get_current_dir_name()<<": ";
+  prompt(b);
   while(getline(cin,x)){
 
     int status;
@@ -447,8 +463,7 @@ int main(){
     
     // do nothing for empty string
     if(expr.size() < 1){
-    
-      cout<<"\n"<<get_current_dir_name()<<": ";
+      prompt(b);
       continue;
     }
     
@@ -464,8 +479,7 @@ int main(){
         prevdir = get_current_dir_name();
         chdir(cdv.at(1));
       }
-      
-      cout<<"\n"<<get_current_dir_name()<<": ";
+      prompt(b); 
       continue;
     }
 
@@ -474,7 +488,7 @@ int main(){
         cout<< proclist.at(i) << " ";
       }
       cout<<"\n";
-      cout<<"\n"<<get_current_dir_name()<<": ";
+      prompt(b);
       continue;
     }
 
@@ -497,8 +511,7 @@ int main(){
         waitpid(pid,NULL,0);
       }
     }
-
-    cout<<"\n"<<get_current_dir_name()<<": ";
+    prompt(b);
   }
 }
 
