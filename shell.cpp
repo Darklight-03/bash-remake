@@ -438,7 +438,12 @@ int main(){
 //    for( int i = 0; i < expr.size();i++){
 //      cout << expr.at(i) << " (space) ";
 //    }
-
+    
+    // do nothing for empty string
+    if(expr.size() < 1){
+      continue;
+    }
+    
     // cd handling
     if(expr.at(0).compare("cd") == 0){
       vector<char*> cdv = v2charv(expr);
@@ -449,6 +454,8 @@ int main(){
     if(expr.at(0).compare("exit") == 0){
       exit(0);
     }
+
+    
 
     // basic fork and handle command on new process
     int pid = fork();
