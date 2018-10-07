@@ -453,9 +453,15 @@ int main(){
     } 
     // ABOVE THIS LINE IS INPUT
     
+    // cd handling
     if(expr.at(0).compare("cd") == 0){
       vector<char*> cdv = v2charv(expr);
       chdir(cdv.at(1));
+    }
+
+    // exit handling
+    if(expr.at(0).compare("exit") == 0){
+      exit(0);
     }
 
     // basic fork and handle command on new process
