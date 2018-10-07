@@ -392,10 +392,10 @@ void runCommands(vector<vector<string>> cmdsstr){
     }
     if(cur.at(cur.size()-1).compare("&")==0){
       cur.pop_back();
-      if(fork()!=0){
-        signal(SIGCHLD,SIG_IGN);
-        exit(0);
-      }
+//      if(fork()!=0){
+//        signal(SIGCHLD,SIG_IGN);
+//        exit(0);
+//      }
     }
 
     // run final command
@@ -423,10 +423,21 @@ void handleCommand(vector<string> cmds){
 
 int main(){
   string x = "";
+  string prevdir = get_current_dir_name();
+  vector<int> proclist;
+
+  cout<<"\n"<<get_current_dir_name()<<": ";
   while(getline(cin,x)){
 
+    int status;
+    int pid;
+
+    while((pid = waitpid(-1,NULL,WNOHANG))>0){
+      cout<<pid<<" exited\n";
+      proclist.erase(remove(proclist.begin(),proclist.end(),pid),proclist.end());
+    }
+
     // BELOW THIS LINE IS INPUT
-    cout<<"\n"<<get_current_dir_name()<<": ";
     vector<string> expr;
     expr = parse(x);
     // ABOVE THIS LINE IS INPUT
@@ -436,13 +447,35 @@ int main(){
     
     // do nothing for empty string
     if(expr.size() < 1){
+    
+      cout<<"\n"<<get_current_dir_name()<<": ";
       continue;
     }
     
     // cd handling
     if(expr.at(0).compare("cd") == 0){
       vector<char*> cdv = v2charv(expr);
-      chdir(cdv.at(1));
+      if(expr.at(1).compare("-")==0){
+        string tprevdir = get_current_dir_name();
+        const char* prevdirc = prevdir.c_str();
+        chdir(prevdirc);
+        prevdir = tprevdir;
+      }else{
+        prevdir = get_current_dir_name();
+        chdir(cdv.at(1));
+      }
+      
+      cout<<"\n"<<get_current_dir_name()<<": ";
+      continue;
+    }
+
+    if(expr.at(0).compare("jobs")==0){
+      for ( int i = 0 ; i < proclist.size() ; i++){
+        cout<< proclist.at(i) << " ";
+      }
+      cout<<"\n";
+      cout<<"\n"<<get_current_dir_name()<<": ";
+      continue;
     }
 
     // exit handling
@@ -453,12 +486,19 @@ int main(){
     
 
     // basic fork and handle command on new process
-    int pid = fork();
+    pid = fork();
     if(pid==0){
       handleCommand(expr);
     }else{
-      waitpid(pid,NULL,0);
+      if(expr.at(expr.size()-1).compare("&") == 0){
+        cout<<pid<<" started\n";
+        proclist.push_back(pid);
+      }else{ 
+        waitpid(pid,NULL,0);
+      }
     }
+
+    cout<<"\n"<<get_current_dir_name()<<": ";
   }
 }
 
