@@ -269,8 +269,11 @@ vector<char*> v2charv(vector<string> v){
   // DUMB STUFF NEEDED TO CONVERT VECTOR TO CHAR ARR 
   // ( from stackoverflow.com/questions/26032039 )
   vector<char*> newv;
+  newv.reserve(v.size());
   for(auto& elem:v){
-    newv.push_back(&elem[0]);
+    char* charStr = new char[elem.size() + 1];
+    std::strcpy(charStr,elem.c_str());
+    newv.push_back(charStr);
   }
   return newv;
 }
@@ -288,10 +291,10 @@ void runSingle(char** chararr){
 // returns 1 if output 2 if input redirection
 int redirType(vector<string> l){
   for( int i = 0 ; i < l.size() ; i++){
-    if(l.at(i) == ">"){
+    if(l.at(i).compare(">") == 0){
       return 1;
     }
-    if(l.at(i) == "<"){
+    if(l.at(i).compare("<") == 0){
       return 0;
     }
   }
@@ -402,6 +405,7 @@ void runCommands(vector<vector<string>> cmdsstr){
 
     // run final command
     vector<char*> cmds = v2charv(cur);
+    cmds.push_back(NULL);
     execvp(cmds.data()[0],cmds.data());
     exit(errno);
 }
@@ -431,7 +435,10 @@ int main(){
     getline(cin,x);
     expr = parse(x);
     // ABOVE THIS LINE IS INPUT
-    
+//    for( int i = 0; i < expr.size();i++){
+//      cout << expr.at(i) << " (space) ";
+//    }
+
     // cd handling
     if(expr.at(0).compare("cd") == 0){
       vector<char*> cdv = v2charv(expr);
